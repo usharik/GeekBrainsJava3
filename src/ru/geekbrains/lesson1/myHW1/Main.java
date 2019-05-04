@@ -14,6 +14,22 @@ public class Main {
         Collections.addAll(list, array);
         swapElements(list,0,2);
         System.out.println(list);
+
+
+        //задание 3:
+        Box<Apple> box1 = new Box<>();
+        Box<Orange> box2 = new Box<>();
+        Box<Orange> box3 = new Box<>();
+
+        box1.addFruits(new Apple(), 6);
+        box2.addFruits(new Orange(),7);
+        System.out.println("Яблоки: " + box1.getBoxWeight());
+        System.out.println("Апельсины: " + box2.getBoxWeight());
+        System.out.println(box1.compare(box2));
+
+        box3.fromBox(box2);
+        System.out.println(box3.getBoxWeight() + " " + box2.getBoxWeight());
+
     }
 
     private static <E> void swapElements(List<E> list, int e1, int e2){
