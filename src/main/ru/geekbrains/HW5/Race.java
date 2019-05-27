@@ -3,15 +3,13 @@ package ru.geekbrains.HW5;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Race {
     private ArrayList<Stage> stages;
     private CountDownLatch countDownReady;
     private CountDownLatch countDownFinish;
-    private String winnerName = null;
-    private Lock lockWinnerName = new ReentrantLock();
+    private AtomicReference<String> winnerName = new AtomicReference<>();
 
     public ArrayList<Stage> getStages() {
         return stages;
@@ -40,12 +38,10 @@ public class Race {
     }
 
     public String getWinnerName() {
-        return winnerName;
+        return winnerName.get();
     }
 
     public void setWinnerName(String winnerName) {
-        if (lockWinnerName.tryLock()) {
-            this.winnerName = winnerName;
-        }
+        this.winnerName.compareAndSet(null,winnerName);
     }
 }
