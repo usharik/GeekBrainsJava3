@@ -1,11 +1,10 @@
-package ru.geekbrains.lesson1;
+package ru.geekbrains.lesson6;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import ru.geekbrains.lesson6.Calculator;
 
 import java.util.Arrays;
 import java.util.Collection;

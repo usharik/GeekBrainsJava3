@@ -1,10 +1,9 @@
-package ru.geekbrains.lesson1;
+package ru.geekbrains.lesson6;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import ru.geekbrains.lesson6.Calculator;
 
 public class CalculatorTest {
 
