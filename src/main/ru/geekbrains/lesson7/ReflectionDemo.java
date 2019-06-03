@@ -71,10 +71,15 @@ public class ReflectionDemo {
         System.out.println(isBoolValueMethod.invoke(someClass));
 
         try {
-            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/network_chat",
-                    "root", "root");
+            Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/network_chat" +
+                            "?useUnicode=true&useJDBCCompliantTimezoneShift=true" +
+                            "&useLegacyDatetimeCode=false&serverTimezone=UTC",
+                    "root", "toor");
             Repository<User> userRepository = new Repository<>(conn, User.class);
             System.out.println(userRepository.buildCreateTableStatement());
+            System.out.println(userRepository.buildAddUserStatement("julia", "789"));
+            //userRepository.insert("julia", "789");
+            System.out.println(userRepository.buildFindByLoginStatement("ivan"));
         } catch (SQLException e) {
             e.printStackTrace();
         }

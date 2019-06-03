@@ -1,6 +1,5 @@
 package ru.geekbrains.lesson7.orm;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.ArrayList;
@@ -17,6 +16,7 @@ public class Repository<T> {
         createTableIfNotExists(conn);
     }
 
+/*
     public void insert(User user) throws SQLException {
         try (PreparedStatement stmt = conn.prepareStatement(
                 "insert into users(login, password) values (?, ?);")) {
@@ -25,10 +25,15 @@ public class Repository<T> {
             stmt.execute();
         }
     }
+*/
 
-    public User findByLogin(String login) throws SQLException {
-        try (PreparedStatement stmt = conn.prepareStatement(
-                "select id, login, password from users where login = ?")) {
+    public void insert(String username, String password) throws SQLException {
+        Statement stmt = conn.createStatement();
+        stmt.execute(buildAddUserStatement(username, password));
+    }
+
+    public User findByLogin(String login) throws SQLException, NoSuchFieldException {
+        try (PreparedStatement stmt = conn.prepareStatement(buildFindByLoginStatement(login))) {
             stmt.setString(1, login);
             ResultSet rs = stmt.executeQuery();
 
@@ -53,12 +58,7 @@ public class Repository<T> {
 
     private void createTableIfNotExists(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute("create table if not exists users (\n" +
-                    "\tid int auto_increment primary key,\n" +
-                    "    login varchar(25),\n" +
-                    "    password varchar(25),\n" +
-                    "    unique index uq_login(login)\n" +
-                    ");");
+            stmt.execute(buildCreateTableStatement());
         }
     }
 
@@ -85,12 +85,52 @@ public class Repository<T> {
                 fieldType = "varchar(25)";
             }
             boolean isPrimaryKey = fld.isAnnotationPresent(PrimaryKey.class);
+            boolean isAutoIncrement = fld.isAnnotationPresent(AutoIncrement.class);
+            boolean isUnique = fld.isAnnotationPresent(Unique.class);
+            boolean isNotNull = fld.isAnnotationPresent(NotNull.class);
 
-            sb.append(fieldName + " " + fieldType + " " + (isPrimaryKey ? "primary key" : "") + ",");
+            sb.append(fieldName + " " + fieldType + "" + (isNotNull ? " not null" : "")
+                    + (isAutoIncrement ? " auto_increment" : "")
+                    + (isPrimaryKey ? " primary key" : "") + ", "
+                    + (isUnique ? "unique index uq_login(" + fieldName +"), " : "") + "");
         }
 
-        sb.deleteCharAt(sb.length() - 1);
+        sb.deleteCharAt(sb.length() - 2);
         sb.append(");");
         return sb.toString();
     }
+
+    public String buildAddUserStatement(String username, String password){
+        StringBuilder sb = new StringBuilder();
+        String tableName = clazz.getAnnotation(Table.class).tableName();
+        sb.append("insert into " + tableName + "(");
+        for (Field fld : clazz.getDeclaredFields()) {
+            ru.geekbrains.lesson7.orm.Field fldAnnotation = fld.getAnnotation(ru.geekbrains.lesson7.orm.Field.class);
+            String fieldName = fldAnnotation.name().isEmpty() ? fld.getName() : fldAnnotation.name();
+            if (fieldName.equals("login") || fieldName.equals("password")) {
+                sb.append(fieldName + ", ");
+            }
+        }
+        sb.deleteCharAt(sb.length() - 2);
+        sb.append(") values ('" + username + "', '" + password + "');");
+        return  sb.toString();
+    }
+
+    public String buildFindByLoginStatement(String username) throws NoSuchFieldException {
+        StringBuilder sb = new StringBuilder();
+        String tableName = clazz.getAnnotation(Table.class).tableName();
+        sb.append("select ");
+        for (Field fld : clazz.getDeclaredFields()) {
+            ru.geekbrains.lesson7.orm.Field fldAnnotation = fld.getAnnotation(ru.geekbrains.lesson7.orm.Field.class);
+            String fieldName = fldAnnotation.name().isEmpty() ? fld.getName() : fldAnnotation.name();
+            if (fieldName.equals("id") || fieldName.equals("login") || fieldName.equals("password")) {
+                sb.append(fieldName + ", ");
+            }
+        }
+        sb.deleteCharAt(sb.length() - 2);
+        sb.append("from " + tableName + " where " + clazz.getDeclaredField("login").getName() +" = ?;");
+        return sb.toString();
+    }
+
+
 }

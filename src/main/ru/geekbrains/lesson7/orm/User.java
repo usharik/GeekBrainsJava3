@@ -4,13 +4,16 @@ package ru.geekbrains.lesson7.orm;
 public class User {
 
     @PrimaryKey
+    @AutoIncrement
     @Field(name = "id")
     private int id;
 
     @Unique
+    @NotNull
     @Field(name = "login")
     private String login;
 
+    @NotNull
     @Field(name = "password")
     private String password;
 
@@ -26,6 +29,7 @@ public class User {
     public int getId() {
         return id;
     }
+
 
     public String getLogin() {
         return login;
