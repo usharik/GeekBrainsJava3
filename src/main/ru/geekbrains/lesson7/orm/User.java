@@ -4,17 +4,18 @@ package ru.geekbrains.lesson7.orm;
 public class User {
 
     @PrimaryKey
-    @Field(name = "id")
+    @AutoIncrement
+    @DbField(name = "id")
     private int id;
 
     @Unique
-    @Field(name = "login")
+    @DbField(name = "login")
     private String login;
 
-    @Field(name = "password")
+    @DbField(name = "password")
     private String password;
 
-    @Field(name = "address")
+    @DbField(name = "address")
     private String address;
 
     public User(int id, String login, String password) {

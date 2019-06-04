@@ -1,6 +1,5 @@
 package ru.geekbrains.lesson7.orm;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.ArrayList;
@@ -10,10 +9,15 @@ public class Repository<T> {
 
     private final Connection conn;
     private Class<T> clazz;
+    private String primaryKeyField;
+    private String insertFields;
+    private String selectFields;
+    private String createTableStatement;
 
     public Repository(Connection conn, Class<T> clazz) throws SQLException {
         this.conn = conn;
         this.clazz = clazz;
+        buildStatements();
         createTableIfNotExists(conn);
     }
 
@@ -53,44 +57,81 @@ public class Repository<T> {
 
     private void createTableIfNotExists(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute("create table if not exists users (\n" +
-                    "\tid int auto_increment primary key,\n" +
-                    "    login varchar(25),\n" +
-                    "    password varchar(25),\n" +
-                    "    unique index uq_login(login)\n" +
-                    ");");
+            stmt.execute(createTableStatement);
         }
     }
 
-    public String buildCreateTableStatement() {
-        StringBuilder sb = new StringBuilder();
+    private void buildStatements() {
+        StringBuilder allStatementSb = new StringBuilder();
+        StringBuilder uniqueFieldsSb = new StringBuilder();
+        StringBuilder insertFieldsSb = new StringBuilder();
+
         if (!clazz.isAnnotationPresent(Table.class)) {
             throw new IllegalStateException("No Table annotation");
         }
         String tableName = clazz.getAnnotation(Table.class).tableName();
         tableName = tableName.isEmpty() ? clazz.getSimpleName() : tableName;
-        sb.append("create table if not exists " + tableName + "(");
+        allStatementSb.append("create table if not exists " + tableName + "(");
 
         for (Field fld : clazz.getDeclaredFields()) {
-            if (!fld.isAnnotationPresent(ru.geekbrains.lesson7.orm.Field.class)) {
+            if (!fld.isAnnotationPresent(DbField.class)) {
                 continue;
             }
-            ru.geekbrains.lesson7.orm.Field fldAnnotation = fld.getAnnotation(ru.geekbrains.lesson7.orm.Field.class);
+            DbField fldAnnotation = fld.getAnnotation(DbField.class);
             String fieldName = fldAnnotation.name().isEmpty() ? fld.getName() : fldAnnotation.name();
             String fieldType = null;
             Class<?> type = fld.getType();
-            if (type == int.class) {
+            if (type == int.class || type == Integer.class) {
                 fieldType = "int";
             } else if (type == String.class) {
-                fieldType = "varchar(25)";
+                fieldType = "varchar(255)";
             }
             boolean isPrimaryKey = fld.isAnnotationPresent(PrimaryKey.class);
 
-            sb.append(fieldName + " " + fieldType + " " + (isPrimaryKey ? "primary key" : "") + ",");
+            if (isPrimaryKey) {
+                if (primaryKeyField != null) {
+                    throw new IllegalStateException("More then one primary key");
+                }
+                primaryKeyField = fieldName;
+            } else {
+                insertFieldsSb.append(fieldName + ",");
+            }
+
+            boolean isAutoIncrement = fld.isAnnotationPresent(AutoIncrement.class);
+
+            if (fld.isAnnotationPresent(Unique.class)) {
+                uniqueFieldsSb.append("unique index ui_" + fieldName + "(" + fieldName + "),");
+            }
+
+            allStatementSb.append(fieldName + " " +
+                    fieldType + " " +
+                    (isPrimaryKey ? "primary key" : "")  + " " +
+                    (isAutoIncrement ? "auto_increment" : "") + ",");
         }
 
-        sb.deleteCharAt(sb.length() - 1);
-        sb.append(");");
-        return sb.toString();
+        if (uniqueFieldsSb.length() > 0) {
+            allStatementSb.append(uniqueFieldsSb);
+        }
+        allStatementSb.deleteCharAt(allStatementSb.length() - 1);
+        allStatementSb.append(");");
+
+        createTableStatement = allStatementSb.toString();
+
+        insertFieldsSb.deleteCharAt(insertFieldsSb.length() - 1);
+        insertFields = insertFieldsSb.toString();
+
+        selectFields = primaryKeyField + "," + insertFields;
+    }
+
+    public String getInsertFields() {
+        return insertFields;
+    }
+
+    public String getSelectFields() {
+        return selectFields;
+    }
+
+    public String getCreateTableStatement() {
+        return createTableStatement;
     }
 }

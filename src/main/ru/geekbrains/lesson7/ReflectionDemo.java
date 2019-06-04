@@ -46,7 +46,7 @@ public class ReflectionDemo {
 
         ReflectionDemo rd = new ReflectionDemo();
         for (Field fld : clazz.getDeclaredFields()) {
-            System.out.printf("Field %s value %s modifiers %s%n", fld.getName(), fld.get(rd),
+            System.out.printf("DbField %s value %s modifiers %s%n", fld.getName(), fld.get(rd),
                     Integer.toBinaryString(fld.getModifiers()));
             if (Modifier.isProtected(fld.getModifiers())) {
                 System.out.println("PROTECTED");
@@ -74,7 +74,9 @@ public class ReflectionDemo {
             Connection conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/network_chat",
                     "root", "root");
             Repository<User> userRepository = new Repository<>(conn, User.class);
-            System.out.println(userRepository.buildCreateTableStatement());
+            System.out.println(userRepository.getCreateTableStatement());
+            System.out.println(userRepository.getInsertFields());
+            System.out.println(userRepository.getSelectFields());
         } catch (SQLException e) {
             e.printStackTrace();
         }
